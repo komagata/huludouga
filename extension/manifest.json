@@ -1,0 +1,12 @@
+﻿{
+	"name":"huluコメントβ",
+	"version":"0.0.1",
+	"content_scripts":[
+		{
+			"matches":["http://www.hulu.jp/watch/*"],
+			"css":["hulucome.css"],
+			"js":["hulucomeSV.js"],
+			"run_at":"document_end"
+		}
+	] 
+}

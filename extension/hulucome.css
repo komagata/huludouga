@@ -1,0 +1,26 @@
+#comeLayer
+{
+    width:720px;
+    height:360px;
+    position:relative;
+    top:-405px;
+    overflow:hidden;
+    margin:auto;
+    pointer-events: none;
+}
+.come
+{
+    font-size:21px;
+    position:absolute;
+    font-weight:bold;
+    font-family:"MS Gothic";
+    color:white;
+    text-shadow: 2px 2px 2px black;
+    white-space:nowrap;
+    padding:0;
+}
+#measure
+{
+    font-size:21px;
+    white-space:nowrap;
+}
