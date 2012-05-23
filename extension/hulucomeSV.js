@@ -1,12 +1,15 @@
 // コメレイヤーの幅(動画サイズと同じ)
-var layerWidth = 720;
+var layerWidth = 896;
 
 // コメレイヤーの高さ
 // プレイヤーのコントローラー(再生ボタンなど)には被らないようにサイズを調整
-var layerHeight = 360;
+var layerHeight = 480;
+
+// プレイヤーの高さ
+var playerHeight = 504;
 
 // コメントのフォントサイズ(固定)
-var fontSize = "28px";
+var fontSize = 28;
 
 // コメント行の高さ
 var rowHeight = 30;
@@ -21,7 +24,7 @@ var rowRightCome = [];
 var onTimeDuration = 5000;
 
 // コメントサーバー
-var comeServer = "http://hulucome.net";
+var comeServer = "http://huludouga.heroku.com/comments";
 
 // 前のフレームのcurrentTimeを保持する
 // プレイヤーからは再生中かどうかを取得する方法がわからなかったため、
@@ -46,7 +49,7 @@ window.addEventListener("load", function () {
     // プレイヤーコンテナの取得
     var playerContainer = document.getElementById("player-container");
     // プレイヤーコンテナの高さを設定。(コメント表示レイヤーを追加した時広がってしまうため。)
-    playerContainer.style.height = "405px";
+    playerContainer.style.height = playerHeight + "px";
     // プレイヤー取得
     player = document.getElementById("player");
     // HTMLエレメントを上に表示できるように、
@@ -98,12 +101,16 @@ window.addEventListener("load", function () {
     // コメント表示用オーバレイレイヤーの作成
     comeLayer = document.createElement("div");
     comeLayer.setAttribute("id", "comeLayer");
+    comeLayer.style.width = layerWidth + "px";
+    comeLayer.style.height = layerHeight + "px";
+    comeLayer.style.top = -playerHeight + "px";
     playerContainer.insertBefore(comeLayer, player.nextSibling);
 
     // コメント表示幅を計測するためのエレメントを作成
     var measure = document.createElement("span");
     measure.setAttribute("id", "measure");
     measure.style.visibility = "hidden";
+    measure.style.fontSize = fontSize + "px";
     document.body.appendChild(measure);
 
     // コメントを取得
@@ -143,7 +150,7 @@ window.addEventListener("load", function () {
         3000
     );
 
-    
+
 
 }, true);
 
@@ -243,10 +250,10 @@ function render(currentTime) {
         var onTime = currentTime - come.position;
         if (onTime > 0) { // 表示時間に達した場合
             // コメントエレメント表示位置計算
-            var comeLeft = layerWidth - Math.floor((come.messageWidth + layerWidth) * onTime / onTimeDuration);
+            var comeLeft = layerWidth - (come.messageWidth + layerWidth) * onTime / onTimeDuration;
             var comeRight = comeLeft + come.messageWidth - layerWidth;
             if (come.flag) {
-                if ((currentTime - come.position) > onTimeDuration && come.flag) {
+                if (onTime > onTimeDuration && come.flag) {
                     comeLayer.removeChild(come.element);
                     come.element = null;
                     come.flag = false;
@@ -257,18 +264,19 @@ function render(currentTime) {
                 var ri = searchCanAddeRowIndex(come);
                 if (ri == -1) continue;
                 // コメントエレメントを作成
-                comeDiv = document.createElement("span");
-                comeDiv.className = "come";
-                comeDiv.textContent = come.body;
-                comeDiv.setAttribute("id", come.resNo);
-                comeDiv.style.left = comeLeft + "px";
-                comeLayer.appendChild(comeDiv);
+                var comeElement = document.createElement("span");
+                comeElement.className = "come";
+                comeElement.textContent = come.body;
+                comeElement.setAttribute("id", come.resNo);
+                comeElement.style.left = comeLeft + "px";
+                comeLayer.appendChild(comeElement);
                 // コメントの表示位置(行)を設定
-                comeDiv.style.top = (ri * rowHeight) + "px";
+                comeElement.style.top = (ri * rowHeight) + "px";
+                comeElement.style.fontSize = fontSize + "px";
                 // 行最右コメント更新
                 rowRightCome[ri] = come;
                 come.flag = true;
-                come.element = comeDiv;
+                come.element = comeElement;
                 come.right = comeRight;
             }
         }
