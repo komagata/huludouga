@@ -1,0 +1,12 @@
+﻿DateFormatter.js
+
+Date型のデータを表示する際のフォーマッターにはこちら
+http://clonedoppelganger.net/javascript/DateFormatter.html
+で配布されているDeteFormatter.jsを使用させていただいています。
+このDateFormatter.jsはBSDライセンスとして公開されています。
+再配布を行う場合、ソースコードやコンパイル後のバイナリ(ライブラリ)には、
+・著作権表示
+・条件のリスト
+・免責事項
+を含める必要があります。
+

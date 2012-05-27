@@ -17,6 +17,12 @@ var rowHeight = 30;
 // コメント行の行数
 var rowCount = layerHeight / rowHeight;
 
+// コメントリストの幅
+var comeListWidth = 215;
+
+// コメントリストコンテナーの幅
+var comeListContainerWidth = comeListWidth + 17;
+
 // その行の一番右にあるコメントを保持する
 var rowRightCome = [];
 
@@ -32,11 +38,17 @@ var comeServer = "http://huludouga.heroku.com/comments";
 // ※このため、一時停止中にシークした場合でも再生中と判断してしまう。
 var previousTime = 0;
 
+// プレイヤーコンテナー
+var playerContainer = null;
+
 // プレイヤー
 var player = null;
 
 // コメント表示用オーバレイレイヤー
 var comeLayer = null;
+
+// コメントリスト
+var comeList = null;
 
 // windowロードイベント
 // コメントレイヤーやコメント入力欄の追加、各種初期化処理を行う
@@ -46,10 +58,8 @@ var comeLayer = null;
 // ※3 ユーザーログイン(TwitterやFacebook利用など)。またはユーザーID生成を行う
 window.addEventListener("load", function () {
 
-    // プレイヤーコンテナの取得
-    var playerContainer = document.getElementById("player-container");
-    // プレイヤーコンテナの高さを設定。(コメント表示レイヤーを追加した時広がってしまうため。)
-    playerContainer.style.height = playerHeight + "px";
+    // プレイヤーコンテナーの取得
+    playerContainer = document.getElementById("player-container");
     // プレイヤー取得
     player = document.getElementById("player");
     // HTMLエレメントを上に表示できるように、
@@ -59,7 +69,7 @@ window.addEventListener("load", function () {
     // 非表示→表示を早いタイミングでやってしまうと"～一度に視聴いただけるビデオは1本となっております。～"
     // のメッセージが表示されて再生ができなくなるので5秒待ってから表示を行う。
     player.style.display = "none";
-    setTimeout(function () { player.style.display = "" }, 5000);
+    setTimeout(function () {player.style.display = "";}, 5000);
 
     // コメント入力欄作成
     var comeInput = document.createElement("input");
@@ -86,7 +96,7 @@ window.addEventListener("load", function () {
 
                 // サーバーに追加コメント情報を送信
                 var xhr = new XMLHttpRequest();
-                xhr.open("POST", "http://huludouga.heroku.com/comments", true);
+                xhr.open("POST", comeServer, true);
                 xhr.addEventListener("error", function () {
                     // コメント登録失敗
                 }, false);
@@ -103,8 +113,23 @@ window.addEventListener("load", function () {
     comeLayer.setAttribute("id", "comeLayer");
     comeLayer.style.width = layerWidth + "px";
     comeLayer.style.height = layerHeight + "px";
-    comeLayer.style.top = -playerHeight + "px";
-    playerContainer.insertBefore(comeLayer, player.nextSibling);
+    comeLayer.style.visibility = "hidden";
+    playerContainer.appendChild(comeLayer);
+
+    // コメントリストコンテナの作成
+    var comeListContainer = document.createElement("div");
+    comeListContainer.setAttribute("id", "comeListContainer");
+    comeListContainer.style.width = comeListContainerWidth + "px";
+    comeListContainer.style.height = playerHeight + "px";
+    comeListContainer.style.visibility = "hidden";
+    playerContainer.appendChild(comeListContainer);
+
+    // コメントリスト用エレメントの作成
+    comeList = document.createElement("div");
+    comeList.setAttribute("id", "comeList");
+    comeList.style.width = comeListContainerWidth + "px";
+    comeList.style.height = playerHeight + "px";
+    comeListContainer.appendChild(comeList);
 
     // コメント表示幅を計測するためのエレメントを作成
     var measure = document.createElement("span");
@@ -115,15 +140,15 @@ window.addEventListener("load", function () {
 
     // コメントを取得
     getComment(
-        "http://huludouga.heroku.com/comments.json?movie_id=" + document.location.pathname.substr(7),
+        comeServer + ".json?movie_id=" + document.location.pathname.substr(7),
         function (res) {
             comments = JSON.parse(res);
             // コメント配列をpositionでソート
             comments.sort(function (x, y) { return x.position - y.position });
 
             for (var ci = 0, cl = comments.length; ci < cl; ci++) {
-                // dateを文字列からDate型に変換
-                //comments[ci].date = new Date(comments[ci].date);
+                // 日付文字列を数値に(ミリ秒)
+                comments[ci].updated_at = +new Date(comments[ci].updated_at);
 
                 // コメントの幅を前もって取得しておく(messageWidthキー要素追加)
                 measure.textContent = comments[ci].body;
@@ -139,7 +164,64 @@ window.addEventListener("load", function () {
                 rowRightCome[ri] = null;
             }
 
-            start = +new Date;
+            // コメントリストのセットアップ及びコメントリストを表示
+            var options = {
+                editable: true,
+                enableCellNavigation: true,
+                asyncEditorLoading: false,
+                autoEdit: false
+            };
+            var columns = [];
+            columns.push({
+                id: "position",
+                name: "位置",
+                field: "position",
+                width: 45,
+                //editor: Slick.Editors.Text,
+                formatter: Slick.Formatters.Position,
+                sortable: true
+            });
+            columns.push({
+                id: "body",
+                name: "コメント",
+                field: "body",
+                width: 100,
+                //editor: Slick.Editors.Text,
+                sortable: true
+            });
+            columns.push({
+                id: "updated_at",
+                name: "書込日時",
+                field: "updated_at",
+                width: 70,
+                //editor: Slick.Editors.Text,
+                formatter: Slick.Formatters.Date,
+                sortable: true
+            });
+            var sortcol = "";
+            var dataView = new Slick.Data.DataView();
+            var grid = new Slick.Grid("#comeList", dataView, columns, options);
+            grid.setSelectionModel(new Slick.RowSelectionModel({}));
+            function comparer(a, b) {
+                var x = a[sortcol], y = b[sortcol];
+                return (x == y ? 0 : (x > y ? 1 : -1));
+            }
+            grid.onSort.subscribe(function (e, args) {
+                sortdir = args.sortAsc ? 1 : -1;
+                sortcol = args.sortCol.field;
+                dataView.sort(comparer, args.sortAsc);
+            });
+            dataView.onRowCountChanged.subscribe(function (e, args) {
+                grid.updateRowCount();
+                grid.render();
+            });
+            dataView.onRowsChanged.subscribe(function (e, args) {
+                grid.invalidateRows(args.rows);
+                grid.render();
+            });
+            dataView.beginUpdate();
+            dataView.setItems(comments);
+            dataView.endUpdate();
 
             // フレームループ開始
             webkitRequestAnimationFrame(step);
@@ -169,8 +251,8 @@ function getComment(uri, data_callback, error_callback, timeout) {
             setTimeout(tryAgain, timeout);
         },
         timeout);
-    r.open("GET", uri, true);
-    r.onreadystatechange = function () {
+        r.open("GET", uri, true);
+        r.onreadystatechange = function () {
         if (r.readyState != 4) {
             // Ignore non-loaded readyStates
             // ...will timeout if do not get to "Loaded"
@@ -201,7 +283,18 @@ function getComment(uri, data_callback, error_callback, timeout) {
 
 // フレームループ関数
 function step() {
-
+    if (playerContainer.style.padding != "") {
+        // プレイヤーコンテナーのパディングを取得。
+        var pcPaddingLeft = playerContainer.style.paddingLeft;
+        var pcPaddingTop = playerContainer.style.paddingTop;
+        // コメレイヤーとコメントリストコンテナーの位置を調整し表示する。
+        comeLayer.style.left = pcPaddingLeft;
+        comeLayer.style.top = pcPaddingTop;
+        comeLayer.style.visibility = "";
+        comeListContainer.style.top = pcPaddingTop;
+        comeListContainer.style.left = (parseInt(playerContainer.style.paddingLeft) + layerWidth + 10) + "px";
+        comeListContainer.style.visibility = "";
+    }
     if (player.getCurrentTime) {
         // プレイヤーのcurrentTimeを取得
         var currentTime = player.getCurrentTime();

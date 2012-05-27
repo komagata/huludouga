@@ -1,11 +1,30 @@
 ﻿{
 	"name":"huluコメントβ",
-	"version":"0.0.1",
+	"version":"0.0.2",
 	"content_scripts":[
 		{
 			"matches":["http://www.hulu.jp/watch/*"],
-			"css":["hulucome.css"],
-			"js":["hulucomeSV.js"],
+			"css":[
+				"css/slick.grid.css",
+				"css/slick-default-theme.css",
+				"css/hulucome.css"
+			],
+			"js":[
+				"js/lib/jquery-1.7.min.js",
+				"js/lib/jquery-ui-1.8.16.custom.min.js",
+				"js/lib/jquery.event.drag-2.0.min.js",
+				"js/lib/DateFormatter.js",
+				"js/SlickGrid/plugins/slick.rowselectionmodel.js",
+				"js/SlickGrid/slick.core.js",
+				"js/SlickGrid/slick.formatters.js",
+				"js/SlickGrid/slick.grid.js",
+				"js/SlickGrid/slick.dataview.js",
+				"js/hulucome.js"
+			],
+			"web_accessible_resources":[
+				"js/SlickGrid/images/sort-asc.gif",
+				"js/SlickGrid/images/sort-desc.gif"
+			],
 			"run_at":"document_end"
 		}
 	] 

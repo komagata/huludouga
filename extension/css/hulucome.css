@@ -1,10 +1,23 @@
 #comeLayer
 {
-    height:360px;
-    position:relative;
-    overflow:hidden;
+    position: absolute;
     margin:auto;
     pointer-events: none;
+    overflow: hidden;
+}
+#comeListContainerPH 
+{
+    position:relative;	
+}
+#comeListContainer 
+{
+    position: absolute;
+    background:#fff;
+    left: 921px;
+}
+#comeList
+{
+    font-size:8pt;	
 }
 .come
 {
