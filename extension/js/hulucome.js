@@ -515,10 +515,16 @@ function getComment() {
 // XHR処理
 function xhrfunc(method, uri, sendData, retryCnt, callback) {
     var xhr = new XMLHttpRequest();
-    xhr.onload = function () { callback(xhr.responseText) };
-    xhr.onerror = function (e) {
-        var rc = retryCnt > 0 ? retryCnt - 1 : retryCnt;
-        if (rc > 0) xhrfunc(method, uri, sendData, callback, rc);
+    var success = false;
+    xhr.onload = function () {
+        success = true;
+        callback(xhr.responseText)
+    };
+    xhr.onloadend = function (e) {
+        if(! success ) {
+            var rc = retryCnt > 0 ? retryCnt - 1 : retryCnt;
+            if (rc > 0) xhrfunc(method, uri, sendData, callback, rc);
+        }
     }
     xhr.open(method, uri, true);
     if (method == "POST") xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
