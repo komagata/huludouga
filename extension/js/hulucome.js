@@ -1,212 +1,225 @@
-// コメレイヤーの幅(動画サイズと同じ)
-var layerWidth = 896;
+// ポップアウトプレイヤーのチェック
+var isPopOutPlayer = (document.location.href.indexOf("stand_alone") != -1);
 
-// コメレイヤーの高さ
-// プレイヤーのコントローラー(再生ボタンなど)には被らないようにサイズを調整
-var layerHeight = 480;
-
-// プレイヤーの高さ
-var playerHeight = 504;
-
-// コメントの最大文字数
-var comeMaxLength = 60;
-
+// --------------------------------
+// 定数
+// --------------------------------
 // 動画の長さが30分の場合でのコメント取得数
 var thirtyMinComeCount = 2000;
-
-// コメントのフォントサイズ(固定)
-var fontSize = 28;
-
-// コメント行の高さ
-var rowHeight = 30;
-
+// コメントの最大文字数
+var comeMaxLength = 60;
 // コメント行の行数
-var rowCount = layerHeight / rowHeight;
-
-// コメントリストの幅
-var comeListWidth = 215;
-
-// コメントリストコンテナーの幅
-var comeListContainerWidth = comeListWidth + 17;
-
-// その行の一番右にあるコメントを保持する
-var rowRightCome = [];
-
+var rowCount = 20;
 // コメントが画面の右端から左端まで移動する時間(単位:ミリ秒)
 var onTimeDuration = 5000;
-
-// コメントサーバー
+// コメントリストの幅
+var comeListWidth = 400;
+// コメントリストコンテナーの幅
+var comeListContainerWidth = comeListWidth + 17;
+// コメントサーバーURL
 var comeServer = "http://huludouga.heroku.com/comments";
 
+// --------------------------------
+// 変数
+// --------------------------------
+// プレイヤーの幅
+var playerWidth = 0;
+// プレイヤーの高さ
+var playerHeight = 0;
+// コメントのフォントサイズ
+var fontSize = 0;
+// コメント行の高さ
+var rowHeight = 0;
+// ポップアウトプレイヤーリサイズ中フラグ
+var isResizing = false;
+// 各行の一番右にあるコメントを保持する配列
+var rowRightCome = new Array(rowCount);
+for (var ri = 0; ri < rowCount; ri++) {
+    // 行最右コメントNo配列初期化
+    rowRightCome[ri] = null;
+}
 // 前のフレームのcurrentTimeを保持する
 // プレイヤーからは再生中かどうかを取得する方法がわからなかったため、
 // 前のcurrentTimeと比較して違う場合は再生中と判断する。
 // ※このため、一時停止中にシークした場合でも再生中と判断してしまう。
 var previousTime = 0;
-
-// プレイヤーコンテナー
-var playerContainer = null;
-
-// プレイヤー
-var player = null;
-
-// コメント表示用オーバレイレイヤー
-var comeLayer = null;
-
-// コメントリスト(エレメント)
-var comeList = null;
-
-// コメントリストグリッド
-var comeListGrid = null;
-
-// ヘッダークリック禁止マスク
-var headerClickMask = null;
-
-// コンテンツID
-var contentID = null
-
 // アスペクト比
 var aspectRatio = 0;
-
-var isPopOutPlayer = false;
-
-// ポップアウトプレイヤーリサイズ中フラグ
-var isResizing = false;
-
-// リサイズ終了チェックタイムアウトID
-var resizedID = null;
-
-// コメント配列(JSON.parseで配列として取得)
-var comments = [];
-
 // 動画の長さ
 var movieDuration = 0;
-
+// コンテンツID
+var contentID = null;
+// リサイズ終了チェックタイムアウトID
+var resizeEndID = null;
+// コメント配列(JSON.parseで配列として取得)
+var comments = [];
 // 再生中フラグ
 // プレイヤーからは再生中かどうかを取得することができないため
 // ループ時にこちらで再生中かどうかをチェックする
 var isPlaying = false;
 var playingState = 0;
+var pausingState = 0;
+// 現在表示しているグリッド
+var currentGrid = null;
+// 現在表示しているグリッドのデータ
+var currentList = comments;
 
 
-// ローカルストレージに保持される変数
-// コメント表示フラグ
-var isComeDisplay = true;
-// 自動スクロールフラグ
-var isAutoScroll = false;
-// コメントリストのソート状態
-var sortCol = null;
-var sortAsc = true;
-// ユーザーID
-var userID = null;
-// NGコメント
-var ngComments = [];
-// NGユーザー
-var ngUsers = [];
+// --------------------------------
+// エレメント用変数
+// --------------------------------
+// コメント表示用オーバレイレイヤー
+var comeLayer = null;
+// コメントリストコンテナー
+var comeListContainer = null;
+// NGユーザーリストコンテナー
+var ngUserListContainer = null;
+// NGコメントリストコンテナー
+var ngComeListContainer = null;
+// コメントリスト(エレメント)
+var comeList = null;
+// NGユーザーリスト(エレメント)
+var ngUserList = null;
+// NGコメントリスト(エレメント)
+var ngComeList = null;
+// コメントリストグリッド
+var comeListGrid = null;
+// NGユーザーリストグリッド
+var ngUserListGrid = null;
+// NGコメントリストグリッド
+var ngComeListGrid = null;
+// ヘッダークリック禁止マスク
+var headerClickMask = null;
+// コメントリストグリッド用コンテキストメニューの「…をNGユーザーに追加する」メニューアイテム
+var clContextAddNgUserMenuItem = null;
+// コメントリストグリッド用コンテキストメニューの「…をNGコメントに追加する」メニューアイテム
+var clContextAddNgComeMenuItem = null;
+// コメントリストグリッド用コンテキストメニューの「…をコピーする」メニューアイテム
+var clContextCopyMenuItem = null;
 
-// windowロードイベント
-// コメントレイヤーやコメント入力欄の追加、各種初期化処理を行う
+// デバッグ用span
+var debugSpan = null;
+
+// --------------------------------
+// 永続化される設定情報取得
+// --------------------------------
+// ※ローカルストレージではboolean型は文字列で保存されるため
+// 取得時は x = val == "true" などで取得
+// ユーザーIDはポップアウトプレイヤー用に使用するため
+// この時点でローカルストレージからの取得は行わない。
+var isComeDisplay = localStorage.isComeDisplay ? localStorage.isComeDisplay == "true" : true;
+var isAutoScroll = localStorage.isAutoScroll ? localStorage.isAutoScroll == "true" : false;
+var comeListSortCol = localStorage.comeListSortCol ? localStorage.comeListSortCol : "updated_at";
+var comeListSortAsc = localStorage.comeListSortAsc ? localStorage.comeListSortAsc : true;
+var ngUserListSortCol = localStorage.ngUserListSortCol ? localStorage.ngUserListSortCol : "userID";
+var ngUserListSortAsc = localStorage.ngUserListSortAsc ? localStorage.ngUserListSortAsc : true;
+var ngComeListSortCol = localStorage.ngComeListSortCol ? localStorage.ngComeListSortCol : "body";
+var ngComeListSortAsc = localStorage.ngComeListSortAsc ? localStorage.ngComeListSortAsc : true;
+var ngUsers = localStorage.ngUsers ? JSON.parse(localStorage.ngUsers) : [];
+var ngComments = localStorage.ngComments ? JSON.parse(localStorage.ngComments) : [];
+
+// --------------------------------
+// DOM構築直後に行う処理
+// --------------------------------
+// ポップアウトプレイヤーかどうかチェック
+var isPopOutPlayer = (document.location.href.indexOf("stand_alone") != -1);
+//フラッシュプレイヤーがロードされる前に!?wmodeを適用したものに置き換える
+// プレイヤーコンテナーを取得
+var playerContainer = document.getElementById(isPopOutPlayer ? "v" : "player-container");
+// プレイヤーを取得
+var player = document.getElementById("player");
+// プレイヤーにwmode("opaque")を追加
+player.setAttribute("wmode", "opaque");
+player.setAttribute("popout", "true");
+// プレイヤーをフルスクリーンコンテナーに移動するとともにwmodeを適応
+playerContainer.removeChild(player);
+playerContainer.appendChild(player);
+
+// コメント表示幅を計測するためのエレメントを作成
+var measure = document.createElement("span");
+measure.setAttribute("id", "measure");
+measure.style.visibility = "hidden";
+document.body.appendChild(measure);
+
+
+// ロードイベント
 window.addEventListener("load", function () {
-    // ローカルストレージから設定情報を取得
-    getLocalStorage();
+    /*for (var ngui = 0; ngui < 100; ngui++) {
+        var ngu = {};
+        ngu.ngUserID = ""+ngui;
+        ngUsers.push(ngu);
+    }
+    for (var ngci = 0; ngci < 100; ngci++) {
+        var ngc = {};
+        ngc.ngBody = ""+ngci;
+        ngComments.push(ngc);
+    }*/
+    // 動画の長さを取得する
+    getDuration();
 
-    // プレイヤー取得
-    player = document.getElementById("player");
-    setTimeout(getInfo, 100);
+});
 
-}, false);
-
-function getInfo() {
-    if (player.getDuration) {
+// 動画の長さを取得
+// 取得できるまでには多少のラグが必要なので
+// タイムアウトで繰り返しチェックして取得する
+function getDuration() {
+    if (player.getDuration && player.getDuration()) {
         movieDuration = player.getDuration();
-        firstInit();
+
+        // プレイヤーの情報
+        getPlayerInfo();
     } else {
-        setTimeout(getInfo, 100);
+        setTimeout(getDuration, 50);
     }
 }
 
-function firstInit() {
-    for (var ri = 0; ri < rowCount; ri++) {
-        // 行最右コメントNo配列初期化
-        rowRightCome[ri] = null;
-    }
-
-    // コメント表示幅を計測するためのエレメントを作成
-    var measure = document.createElement("span");
-    measure.setAttribute("id", "measure");
-    measure.style.visibility = "hidden";
-    measure.style.fontSize = fontSize + "px";
-    document.body.appendChild(measure);
-
-    layerWidth = player.offsetWidth;
-
-    isPopOutPlayer = (document.location.href.indexOf("stand_alone") != -1);
+// プレイヤーの情報を取得
+// こちらも念のためタイムアウトを使って取得
+function getPlayerInfo() {
     if (isPopOutPlayer) {
-        popOutPlayerLoad();
+        if (playerContainer.offsetWidth) {
+            playerWidth = playerContainer.offsetWidth;
+            playerHeight = playerContainer.offsetHeight;
+        } else {
+            setTimeout(getPlayerInfo, 50);
+            return;
+        }
     } else {
-        pagePlayerLoad();
+        if (playerContainer.style.width) {
+            playerWidth = parseInt(playerContainer.style.width);
+            playerHeight = parseInt(playerContainer.style.height);
+            player.style.width = "100%";
+            player.style.height = "100%";
+        } else {
+            setTimeout(getPlayerInfo, 50);
+            return;
+        }
+    }
+    rowHeight = Math.floor(playerHeight / 20);
+    fontSize = rowHeight - 2;
+    measure.style.fontSize = fontSize + "px";
+
+    // UIエレメント作成
+    createElement();
+}
+
+// UIエレメント作成
+function createElement() {
+    
+    // UI構築
+    if (isPopOutPlayer) {
+        createElementForPopOutPlayer();
+    } else {
+        createElementForPagePlayer();
     }
 
-    // HTMLエレメントを上に表示できるように、
-    // プレイヤー(flash)にwmode="opaque"を追加
-    player.setAttribute("wmode", "opaque");
-    // プレイヤーを一旦非表示にし、再描画を行いwmodeを有効にする。
-    // 非表示→表示を早いタイミングでやってしまうと"～一度に視聴いただけるビデオは1本となっております。～"
-    // のメッセージが表示されて再生ができなくなるので5秒待ってから表示を行う。
-    player.style.display = "none";
-    setTimeout(function () {
-        player.style.display = "";
-        // ★
-        if (comments.length) step();
-    }, 5000);
-
+    // コメントをサーバーより取得
     getComment();
 }
 
-// ローカルストレージデータ取得関数
-// ※ローカルストレージではboolean型は文字列で保存されるため
-// 取得時は x = val == "true" などで取得
-function getLocalStorage() {
-    // ローカルストレージから設定情報を取得
-    // ユーザーIDはポップアウトプレイヤー用に使用するため
-    // この時点でローカルストレージからの取得は行わない。
-    if (localStorage.isComeDisplay) {
-        isComeDisplay = localStorage.isComeDisplay == "true";
-    } else {
-        isComeDisplay = true;
-    }
-    if (localStorage.isAutoScroll) {
-        isAutoScroll = localStorage.isAutoScroll == "true";
-    } else {
-        isAutoScroll = false;
-    }
-    if (localStorage.sortCol) {
-        sortCol = localStorage.sortCol;
-    } else {
-        // コメントリストのソート列のデフォルトは"書込日時"にする
-        sortCol = "updated_at";
-    }
-    if (localStorage.sortAsc) {
-        sortAsc = localStorage.sortAsc == "true";
-    } else {
-        sortAsc = true;
-    }
-    if (localStorage.ngComments) {
-        ngComments = localStorage.ngComments;
-    } else {
-        ngComments = [];
-    }
-    if (localStorage.ngUsers) {
-        ngUsers = localStorage.ngUsers;
-    } else {
-        ngUsers = [];
-    }
-}
+// ページプレイヤー用のUI構築
+function createElementForPagePlayer() {
 
-
-function pagePlayerLoad() {
-    // プレイヤーコンテナーの取得
-    playerContainer = document.getElementById("player-container");
     // flashvarsを連想配列に展開
     var flashvars = getFlashVars(player);
     // コンテンツIDの取得
@@ -216,21 +229,23 @@ function pagePlayerLoad() {
     // コメント表示用オーバレイレイヤーの作成
     comeLayer = document.createElement("div");
     comeLayer.setAttribute("id", "comeLayer");
-    comeLayer.style.width = layerWidth + "px";
-    comeLayer.style.height = layerHeight + "px";
+    comeLayer.style.width = playerWidth + "px";
+    comeLayer.style.height = playerHeight + "px";
     comeLayer.style.visibility = isComeDisplay ? "" : "hidden";
     comeLayer.style.position = "absolute";
-    comeLayer.style.left = player.offsetLeft +"px";
-    comeLayer.style.top = player.offsetTop +"px";
+    comeLayer.style.left = player.offsetLeft + "px";
+    comeLayer.style.top = player.offsetTop + "px";
     playerContainer.appendChild(comeLayer);
+    
     // コメントリストコンテナの作成
-    var comeListContainer = document.createElement("div");
+    comeListContainer = document.createElement("div");
     comeListContainer.setAttribute("id", "comeListContainer");
     comeListContainer.style.position = "absolute";
     comeListContainer.style.width = comeListContainerWidth + "px";
     comeListContainer.style.height = (playerHeight - 20) + "px";
-    comeListContainer.style.top = player.offsetTop + "px";
-    comeListContainer.style.left = (player.offsetLeft + layerWidth + 10) + "px";
+    comeListContainer.style.top = playerContainer.style.paddingTop;
+    comeListContainer.style.left = (parseInt(playerContainer.style.paddingLeft) + playerWidth + 10) + "px";
+    comeListContainer.style.backgroundColor = "white";
     playerContainer.appendChild(comeListContainer);
     // コメントリスト用エレメントの作成
     comeList = document.createElement("div");
@@ -239,12 +254,84 @@ function pagePlayerLoad() {
     comeList.style.height = (playerHeight - 20) + "px";
     comeListContainer.appendChild(comeList);
     // コメントリストグリッド初期化
-    initComeListGrid();
+    var comeColumns = [];
+    comeColumns.push({ id: "position", name: "位置", field: "position", width: 60, formatter: Slick.Formatters.Position, sortable: true });
+    comeColumns.push({ id: "body", name: "コメント", field: "body", width: 270, formatter: Slick.Formatters.Comment, sortable: true });
+    comeColumns.push({ id: "updated_at", name: "書込日時", field: "updated_at", width: 70, formatter: Slick.Formatters.Date, sortable: true });
+    comeListGrid = initGrid("#comeList", comments, comeColumns);
+    comeListGrid.onDblClick.subscribe(function (e, args) {
+        // ダブルクリックしたら再生位置をその位置にする
+        // プレイヤーのseekVideoメソッドの引数は秒単位
+        var cell = comeListGrid.getCellFromEvent(e);
+        var row = cell.row;
+        var seekPos = Math.floor(comments[row].position / 1000);
+        // 最低1秒前にシークする
+        player.seekVideo(seekPos - 1);
+    });
+    comeListGrid.onContextMenu.subscribe(showContextMenu);
+    // ヘッダークリック禁止用マスクレイヤーの作成
+    var header = document.getElementsByClassName("slick-header")[0];
+    headerClickMask = document.createElement("div");
+    headerClickMask.setAttribute("id", "headerClickMask");
+    headerClickMask.style.position = "absolute";
+    headerClickMask.style.left = headerClickMask.style.top = 0 + "px";
+    headerClickMask.style.width = header.offsetWidth + "px";
+    headerClickMask.style.height = header.offsetHeight + "px";
+    headerClickMask.style.display = isAutoScroll ? "" : "none";
+    comeList.appendChild(headerClickMask);
+
+    // NGユーザーリストコンテナの作成
+    ngUserListContainer = document.createElement("div");
+    ngUserListContainer.setAttribute("id", "ngUserListContainer");
+    ngUserListContainer.style.position = "absolute";
+    ngUserListContainer.style.width = comeListContainerWidth + "px";
+    ngUserListContainer.style.height = (playerHeight - 30) + "px";
+    ngUserListContainer.style.top = playerContainer.style.paddingTop;
+    ngUserListContainer.style.left = (parseInt(playerContainer.style.paddingLeft) + playerWidth + 10) + "px";
+    ngUserListContainer.style.backgroundColor = "white";
+    playerContainer.appendChild(ngUserListContainer);
+    // コメントリスト用エレメントの作成
+    ngUserList = document.createElement("div");
+    ngUserList.setAttribute("id", "ngUserList");
+    ngUserList.style.width = comeListContainerWidth + "px";
+    ngUserList.style.height = (playerHeight - 30) + "px";
+    ngUserListContainer.appendChild(ngUserList);
+    // コメントリストグリッド初期化
+    var ngUserColumns = [];
+    ngUserColumns.push({ id: "ngUserID", name: "NGユーザー", field: "ngUserID", width: 330, sortable: true });
+    ngUserColumns.push({ id: "ngUserAddDate", name: "追加日時", field: "addDate", width: 70, formatter: Slick.Formatters.Date, sortable: true });
+    ngUserListGrid = initGrid("#ngUserList", ngUsers, ngUserColumns);
+    ngUserListGrid.onContextMenu.subscribe(showContextMenu);
+
+    // NGコメントリストコンテナの作成
+    ngComeListContainer = document.createElement("div");
+    ngComeListContainer.setAttribute("id", "ngComeListContainer");
+    ngComeListContainer.style.position = "absolute";
+    ngComeListContainer.style.width = comeListContainerWidth + "px";
+    ngComeListContainer.style.height = (playerHeight - 30) + "px";
+    ngComeListContainer.style.top = playerContainer.style.paddingTop;
+    ngComeListContainer.style.left = (parseInt(playerContainer.style.paddingLeft) + playerWidth + 10) + "px";
+    ngComeListContainer.style.backgroundColor = "white";
+    playerContainer.appendChild(ngComeListContainer);
+    // コメントリスト用エレメントの作成
+    ngComeList = document.createElement("div");
+    ngComeList.setAttribute("id", "ngComeList");
+    ngComeList.style.width = comeListContainerWidth + "px";
+    ngComeList.style.height = (playerHeight - 30) + "px";
+    ngComeListContainer.appendChild(ngComeList);
+    // コメントリストグリッド初期化
+    var ngComeColumns = [];
+    ngComeColumns.push({ id: "ngBody", name: "NGコメント", field: "ngBody", width: 330, sortable: true });
+    ngComeColumns.push({ id: "ngComeAddDate", name: "追加日時", field: "addDate", width: 70, formatter: Slick.Formatters.Date, sortable: true });
+    ngComeListGrid = initGrid("#ngComeList", ngComments, ngComeColumns);
+    ngComeListGrid.onContextMenu.subscribe(showContextMenu);
+
     // 自動スクロールチェックボックスの作成
     var cbAutoScroll = document.createElement("input");
     cbAutoScroll.setAttribute("type", "checkbox");
     cbAutoScroll.setAttribute("id", "cbAutoScroll");
     cbAutoScroll.checked = isAutoScroll;
+    cbAutoScroll.style.marginTop = "4px";
     comeListContainer.appendChild(cbAutoScroll);
     cbAutoScroll.addEventListener("click", cbAutoScrollClick, false);
     // 自動スクロールチェックボックス用ラベルの作成
@@ -252,11 +339,63 @@ function pagePlayerLoad() {
     lblAutoScroll.setAttribute("id", "lblAutoScroll");
     lblAutoScroll.setAttribute("for", "cbAutoScroll");
     lblAutoScroll.textContent = "自動スクロールする";
+    lblAutoScroll.style.marginTop = "4px";
     comeListContainer.appendChild(lblAutoScroll);
+
+    // NGユーザー手入力登録用テキストボックスの作成
+    var tbAddNgUser = document.createElement("input");
+    tbAddNgUser.setAttribute("type", "textbox");
+    tbAddNgUser.setAttribute("id", "tbAddNgUser");
+    tbAddNgUser.style.height = "20px";
+    tbAddNgUser.style.width = (comeListContainerWidth - 4) + "px";
+    tbAddNgUser.style.display = "inline-block";
+    tbAddNgUser.style.float = "left";
+    tbAddNgUser.style.fontSize = "9pt";
+    tbAddNgUser.style.marginTop = "4px";
+    ngUserListContainer.appendChild(tbAddNgUser);
+    tbAddNgUser.addEventListener("keydown", function (e) {
+        if (e.keyCode == 13) {
+            var ngUserID = tbAddNgUser.value.replace(/^[\s　]+|[\s　]+$/g, '');
+            // 未入力または空白のみの場合はコメントの登録を行わない
+            if (ngUserID == "") return;
+            // 50文字でカットする
+            if (ngUserID.length > 50) {
+                ngUserID = ngUserID.substr(0, 50);
+            }
+            tbAddNgUser.value = "";
+            addNgUser(ngUserID);
+        }
+    });
+    
+    // NGコメント手入力登録用テキストボックスの作成
+    var tbAddNgCome = document.createElement("input");
+    tbAddNgCome.setAttribute("type", "textbox");
+    tbAddNgCome.setAttribute("id", "tbAddNgCome");
+    tbAddNgCome.style.height = "20px";
+    tbAddNgCome.style.width = (comeListContainerWidth - 4) + "px";
+    tbAddNgCome.style.display = "inline-block";
+    tbAddNgCome.style.float = "left";
+    tbAddNgCome.style.fontSize = "9pt";
+    tbAddNgCome.style.marginTop = "4px";
+    ngComeListContainer.appendChild(tbAddNgCome);
+    tbAddNgCome.addEventListener("keydown", function (e) {
+        if (e.keyCode == 13) {
+            var ngCome = tbAddNgCome.value.replace(/^[\s　]+|[\s　]+$/g, '');
+            // 未入力または空白のみの場合はコメントの登録を行わない
+            if (ngCome == "") return;
+            // コメント最大文字数で文字でカットする
+            if (ngCome.length > comeMaxLength) {
+                ngUserID = ngUserID.substr(0, comeMaxLength);
+            }
+            tbAddNgCome.value = "";
+            addNgCome(ngCome);
+        }
+    });
+
     // コントロールパネルの作成
     var controlPanel = document.createElement("div");
     controlPanel.setAttribute("id", "comeControlPanel");
-    controlPanel.style.width = layerWidth + "px";
+    controlPanel.style.width = playerWidth + "px";
     controlPanel.style.margin = "0 auto";
     controlPanel.style.height = "30px";
     playerContainer.parentNode.insertBefore(controlPanel, playerContainer.nextSibling);
@@ -277,14 +416,105 @@ function pagePlayerLoad() {
     btnComeDisplay.className = isComeDisplay ? "comeDisplay" : "comeNoDisplay";
     controlPanel.appendChild(btnComeDisplay);
     btnComeDisplay.addEventListener("click", btnComeDisplayClick, false);
+
+
+    // btnComeList
+    var btnComeList = document.createElement("div");
+    btnComeList.setAttribute("id", "btnComeList");
+    btnComeList.setAttribute("title", "コメント");
+    btnComeList.className = isComeDisplay ? "comeDisplay" : "comeNoDisplay";
+    controlPanel.appendChild(btnComeList);
+    btnComeList.addEventListener("click", function () {
+        comeListContainer.style.visibility = "";
+        ngUserListContainer.style.visibility = "hidden";
+        ngComeListContainer.style.visibility = "hidden";
+        currentGrid = comeListGrid;
+        currentList = comments;
+    }, false);
+    // btnNgUserList
+    var btnNgUserList = document.createElement("div");
+    btnNgUserList.setAttribute("id", "btnNgUserList");
+    btnNgUserList.setAttribute("title", "NGユーザー");
+    btnNgUserList.className = isComeDisplay ? "comeDisplay" : "comeNoDisplay";
+    controlPanel.appendChild(btnNgUserList);
+    btnNgUserList.addEventListener("click", function () {
+        comeListContainer.style.visibility = "hidden";
+        ngUserListContainer.style.visibility = "";
+        ngComeListContainer.style.visibility = "hidden";
+        currentGrid = ngUserListGrid;
+        currentList = ngUsers;
+    }, false);
+    // btnNgComeList
+    var btnNgComeList = document.createElement("div");
+    btnNgComeList.setAttribute("id", "btnNgComeList");
+    btnNgComeList.setAttribute("title", "NGコメント");
+    btnNgComeList.className = isComeDisplay ? "comeDisplay" : "comeNoDisplay";
+    controlPanel.appendChild(btnNgComeList);
+    btnNgComeList.addEventListener("click", function () {
+        comeListContainer.style.visibility = "hidden";
+        ngUserListContainer.style.visibility = "hidden";
+        ngComeListContainer.style.visibility = "";
+        currentGrid = ngComeListGrid;
+        currentList = ngComments;
+    }, false);
+    comeListContainer.style.visibility = "";
+    ngUserListContainer.style.visibility = "hidden";
+    ngComeListContainer.style.visibility = "hidden";
+    currentGrid = comeListGrid;
+
+    debugSpan = document.createElement("span");
+    debugSpan.style.width = "100px";
+    debugSpan.style.display = "inline-block";
+    debugSpan.style.float = "left";
+    debugSpan.style.color = "white";
+    controlPanel.appendChild(debugSpan);
+
+    // コメントリストグリッド用コンテキストメニューの作成
+    var clContextMenu = document.createElement("ul");
+    clContextMenu.setAttribute("id", "clContextMenu");
+    clContextMenu.style.display = "none";
+    clContextMenu.style.position = "absolute";
+    clContextAddNgUserMenuItem = document.createElement("li");
+    clContextMenu.appendChild(clContextAddNgUserMenuItem);
+    clContextAddNgUserMenuItem.addEventListener("click", function () {
+        addNgUser(this.getAttribute("data"));
+    });
+    clContextAddNgComeMenuItem = document.createElement("li");
+    clContextMenu.appendChild(clContextAddNgComeMenuItem);
+    clContextAddNgComeMenuItem.addEventListener("click", function () {
+        addNgCome(this.getAttribute("data"));
+    });
+    clContextCopyMenuItem = document.createElement("li");
+    clContextMenu.appendChild(clContextCopyMenuItem);
+    clContextCopyMenuItem.addEventListener("click", function () {
+        var comment = this.getAttribute("data");
+        $.clipboard(comment);
+    });
+    document.body.appendChild(clContextMenu);
+   
+
+    // NGリスト編集用コンテキストメニューの作成
+    var ngContextMenu = document.createElement("ul");
+    ngContextMenu.setAttribute("id", "ngContextMenu");
+    ngContextMenu.style.display = "none";
+    ngContextMenu.style.position = "absolute";
+    var ngContextMenuItem = document.createElement("li");
+    ngContextMenuItem.textContent = "削除"
+    ngContextMenu.appendChild(ngContextMenuItem);
+    document.body.appendChild(ngContextMenu);
+    $("#ngContextMenu").click(function (e) {
+        if (!$(e.target).is("li")) return;
+        var row = $(this).data("row");
+        currentList.splice(row, 1);
+        gridDataBind(currentGrid, currentList);
+        commentsSetNG();
+        gridDataBind(comeListGrid, comments);
+    });
 }
 
-// ポップアウトプレイヤーロードイベント処理
-function popOutPlayerLoad() {
-    // プレイヤーコンテナーの取得
-    playerContainer = document.getElementById("v");
-    // プレイヤーコンテナーリサイズ時にコメレイヤーをリサイズ
-    playerContainer.addEventListener("resize", popOutResize, false);
+// ポップアウトプレイヤー用UI構築
+function createElementForPopOutPlayer() {
+   
     // flashvarsを連想配列に展開
     var flashvars = getFlashVars(player);
     // lcnameの値(base64文字列)をデコードし、contentIDの値を取得
@@ -302,12 +532,27 @@ function popOutPlayerLoad() {
     playerContainer.appendChild(comeLayer);
     // 初期表示のアスペクト比を取得
     aspectRatio = player.offsetWidth / player.offsetHeight;
-    // 行の高さを計算
-    rowHeight = rowCount / player.offsetHeight;
-    // フォントサイズを計算
-    fontSize = rowHeight - 2;
     // コメント幅取得用エレメントにフォントサイズを適用
     measure.style.fontSize = fontSize + "px";
+
+    window.addEventListener("resize", function () {
+        if (playerWidth != playerContainer.offsetWidth) {
+            playerWidth = playerContainer.offsetWidth;
+        }
+        if (playerHeight != playerContainer.offsetHeight) {
+            playerHeight = playerContainer.offsetHeight;
+            rowHeight = playerHeight / rowCount;
+            fontSize = rowHeight - 2;
+            measure.style.fontSize = fontSize + "px";
+            var comeElements = comeLayer.childNodes;
+            /*for (var cei = 0, cel = comeElements.length; cei < cel; cei++) {
+                cei.style.fontSize = fontSize + "px";
+            }*/
+            for (var ci = 0, cl = comments.length; ci < cl; ci++) {
+                comments.messageWidth = measure.offsetWidth;
+            }
+        }
+    });
 }
 
 // 自動スクロールチェックボックスクリックイベントハンドラ関数
@@ -317,23 +562,23 @@ function cbAutoScrollClick(e) {
     if (cbAutoScroll.checked) { // 自動スクロールチェックボックスにチェックを入れた場合
         var sortCols = comeListGrid.getSortColumns();
         if (sortCols.length == 0) { // ソートされていない場合
-            sortCol = null;
+            comeListSortCol = null;
         } else { // ソートされている場合
             // 現在のソート状態を保持
-            sortCol = sortCols[0].columnId;
-            sortAsc = sortCols[0].sortAsc;
+            comeListSortCol = sortCols[0].columnId;
+            comeListSortAsc = sortCols[0].sortAsc;
         }
         // コメントリストを"位置"でソートする。
         comeListGrid.setSortColumns("position", true);
-        commentsSort("position", true);
-        comeListGridDataBind();
+        dataSort(comments, "position", true);
+        gridDataBind(comeListGrid, comments);
         headerClickMask.style.display = "";
     } else { // 自動スクロールチェックボックスにチェックをはずした場合
-        if (sortCol) { // 自動スクロール前のソート状態が保持されている場合
+        if (comeListSortCol) { // 自動スクロール前のソート状態が保持されている場合
             // 自動スクロール前のソートに戻す。
-            comeListGrid.setSortColumn(sortCol, true);
-            commentsSort(sortCol, sortAsc);
-            comeListGridDataBind();
+            comeListGrid.setSortColumn(comeListSortCol, comeListSortAsc);
+            dataSort(comments, comeListSortCol, comeListSortAsc);
+            gridDataBind(comeListGrid, comments);
         }
         headerClickMask.style.display = "none";
     }
@@ -372,11 +617,49 @@ function comeInputKeydown(e) {
             // 一番下に追加したほうがいいかもしれない
             var sortCols = comeListGrid.getSortColumns();
             if (sortCols.length > 0) {
-                commentsSort(sortCol[0].columnId, sortCol[0].sortAsc);
+                dataSort(comments, sortCols[0].columnId, sortCols[0].sortAsc);
             }
-            comeListGridDataBind();
+            gridDataBind(comeListGrid, comments);
         });
     }
+}
+
+// コンテキストメニューイベントハンドラ関数
+function showContextMenu(e) {
+    e.preventDefault();
+    var row = currentGrid.getCellFromEvent(e).row;
+    if (currentGrid == comeListGrid) {
+        $("#clContextMenu")
+          .css("top", e.pageY)
+          .css("left", e.pageX)
+          .show();
+    } else {
+        $("#ngContextMenu")
+          .data("row", row)
+          .css("top", e.pageY)
+          .css("left", e.pageX)
+          .show();
+    }
+    currentGrid.setSelectedRows([row]);
+    if (currentGrid == comeListGrid) {
+        var come = comments[row].body;
+        if (come.length > 10) {
+            come = come.substr(0, 10) + "…";
+        }
+        clContextAddNgUserMenuItem.textContent = come + " をNGユーザーに追加";
+        clContextAddNgUserMenuItem.setAttribute("data", comments[row].userID);
+        clContextAddNgComeMenuItem.textContent = come + " をNGコメントに追加";
+        clContextAddNgComeMenuItem.setAttribute("data", comments[row].body.replace(/^[\s　]+|[\s　]+$/g, ''));
+        clContextCopyMenuItem.textContent = come + " をコピー";
+        clContextCopyMenuItem.setAttribute("data", comments[row].body);
+    }
+    $("body").one("click", function () {
+        if (currentGrid == comeListGrid) {
+            $("#clContextMenu").hide();
+        } else {
+            $("#ngContextMenu").hide();
+        }
+    });
 }
 
 // コメント表示切り替えボタンクリックイベントハンドラ関数
@@ -391,60 +674,9 @@ function btnComeDisplayClick(e){
     if (player.getCurrentTime) step();
 }
 
-// ポップアウトプレイヤーリサイズイベントハンドラ関数
-function popOutResize(e) {
-    if (!isResizing) { // リサイズスタートの場合
-        // 再生中の場合は動画を一時停止する。
-        if (isPlaying) {
-            player.pauseVideo();
-        }
-        // リサイズ中フラグをセット
-        isResizing = true;
-    }
-
-    var pcW = playerContainer.style.offsetWidth, pcH = playerContainer.style.offsetHiehgt;
-    var calcW = pcH * aspectRatio;
-
-    // コメントレイヤーのサイズを再設定
-    comeLayer.style.width = layerWidth = calcW;
-    comeLayer.style.height = pcH;
-    // 行の高さ及びフォントサイズを再計算
-    rowHeight = Math.floor(pcH / rowCount);
-    fontSize = rowHeight - 2;
-    // コメント表示幅取得用エレメントに最計算したフォントサイズを適用
-    measure.style.fontSize = fontSize + "px";
-    var comeElements = comeLayer.childNodes;
-    for (var cei = 0, cel = comeElements.length; cei < cel; cei++) {
-        var comeElmemnt = comeElements[cei];
-        // フォントサイズを変更
-        comeElmemnt.style.fontSize = fontSize + "px";
-        // コメント幅を再取得
-        measure.textContent = comeElmemnt.textContent;
-        var come = comments[+come.getAttribute("id")];
-        come.messageWidth = measure.offsetWidth;
-        // コメントの位置を再設定
-        come.style.left = (layerWidth - (come.messageWidth + layerWidth) * onTime / onTimeDuration) + "px";
-    }
-
-    // リサイズ終了をチェック
-    if (resizedID) {
-        clearTimeout(resizedID);
-        resizedID = null;
-    }
-    resizedID = setTimeout(function () {
-        // リサイズ中フラグをリセット
-        isPlaying = false;
-        // 改めて全てのコメントの幅を再取得
-        for (var ci = 0, cl = comments.length; ci < cl; ci++) {
-            var come = comments[ci];
-            measure.textContent = come.body;
-            come.messageWidth = measure.offsetWidth;
-        }
-        // 動画の再生を再開
-        if (isPlaying) {
-            player.playVideo();
-        }
-    }, 500);
+// フルスクリーン切り替えボタンクリックイベントハンドラ関数
+function btnFullScreenClick(e) {
+    //fullScreenContainer.webkitRequestFullScreen();
 }
 
 // flashvarsを展開
@@ -494,6 +726,7 @@ function getContentIDValue(decData) {
     return 0;
 }
 
+// コメントをサーバーから取得
 function getComment() {
     xhrfunc("GET", comeServer + ".json?movie_id=" + contentID, null, -1, function (res) {
         comments = JSON.parse(res);
@@ -503,12 +736,12 @@ function getComment() {
             // コメントリストのセットアップ及びコメントリストを表示
             // ローカルストレージに保存していたソート状態またはデフォルトのソート状態でソートを行う
             // ただし、自動スクロールフラグがセットされている場合は"位置"(かつAsc)でソートする。
-            comeListGrid.setSortColumn(isAutoScroll ? "position" : sortCol, isAutoScroll ? true : sortAsc);
-            commentsSort(isAutoScroll ? "position" : sortCol, isAutoScroll ? true : sortAsc);
-            comeListGridDataBind();
+            dataSort(comments, isAutoScroll ? "position" : comeListSortCol, isAutoScroll ? true : comeListSortAsc);
+            comeListGrid.setSortColumn(isAutoScroll ? "position" : comeListSortCol, isAutoScroll ? true : comeListSortAsc);
+            gridDataBind(comeListGrid, comments);
         }
         // フレームループ開始★
-        if (player.getCurrentTime) step();
+        step();
     });
 }
 
@@ -516,34 +749,84 @@ function getComment() {
 function xhrfunc(method, uri, sendData, retryCnt, callback) {
     var xhr = new XMLHttpRequest();
     var success = false;
-    xhr.onload = function () {
-        success = true;
-        callback(xhr.responseText)
-    };
-    xhr.onloadend = function (e) {
-        if(! success ) {
-            var rc = retryCnt > 0 ? retryCnt - 1 : retryCnt;
-            if (rc > 0) xhrfunc(method, uri, sendData, callback, rc);
+    xhr.onloadend = function () {
+        if (!xhr.responseText) {
+            setTimeout(xhrfunc(method, uri, sendData, retryCnt, callback), 3000);
+        } else {
+            if (method == "GET") {
+                comments = JSON.parse(xhr.responseText);
+                if (comments.length == 0) {
+                    setTimeout(xhrfunc(method, uri, sendData, retryCnt, callback), 3000);
+                    return;
+                }
+            }
+            callback(xhr.responseText);
         }
-    }
+    };
     xhr.open(method, uri, true);
     if (method == "POST") xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.send(sendData);
 }
+function xhrfuncRetry(method, uri, sendData, retryCnt, callback) {
+    var rc = retryCnt > 0 ? retryCnt - 1 : retryCnt;
+    if (rc > 0) xhrfunc(method, uri, sendData, callback, rc);
+}
+
+// グリッドオプション
+var gridOptions = {
+    editable: true,
+    enableCellNavigation: true,
+    asyncEditorLoading: false,
+    autoEdit: false
+};
+
+// グリッド初期化
+function initGrid(id, data, columns) {
+    var grid = new Slick.Grid(id, data, columns, gridOptions);
+    grid.setSelectionModel(new Slick.RowSelectionModel({}));
+    grid.onSort.subscribe(function gridSort(e, args) {
+        var grid = args.grid;
+        var data = grid.getData();
+        var field = args.sortCol.field;
+        var asc = args.sortAsc;
+        if (data == comments) {
+            localStorage.comeListSortCol = comeListSortCol = field;
+            localStorage.comeListSortAsc = comeListSortAsc = asc;
+        } else if (data == ngUsers) {
+            localStorage.ngUserListSortCol = ngUserListSortCol = field;
+            localStorage.ngUserListSortAsc = ngUserListSortAsc = asc;
+        } else if (data == ngComments) {
+            localStorage.ngComeListSortCol = ngComeListSortCol = field;
+            localStorage.ngComeListSortAsc = ngComeListSortAsc = asc;
+        }
+        dataSort(data, field, asc);
+        gridDataBind(grid, data);
+    });
+    return grid;
+}
+
+// グリッドデータバインド処理
+function gridDataBind(grid, data) {
+    grid.setData(data);
+    grid.updateRowCount();
+    grid.render();
+}
+
+// データソート処理
+function dataSort(data, field, asc) {
+    data.sort(function (a, b) {
+        var result = a[field] > b[field] ? 1 : a[field] < b[field] ? -1 : 0;
+        return asc ? result : -result;
+    });
+}
 
 // コメントリストグリッド初期化処理
-function initComeListGrid() {
-    var options = {
-        editable: true,
-        enableCellNavigation: true,
-        asyncEditorLoading: false,
-        autoEdit: false
-    };
+/*function initComeListGrid() {
     var columns = [];
     columns.push({ id: "position", name: "位置", field: "position", width: 45, formatter: Slick.Formatters.Position, sortable: true });
     columns.push({ id: "body", name: "コメント", field: "body", width: 100, sortable: true });
     columns.push({ id: "updated_at", name: "書込日時", field: "updated_at", width: 70, formatter: Slick.Formatters.Date, sortable: true });
-    comeListGrid = new Slick.Grid("#comeList", [], columns, options);
+    comeListGrid = new Slick.Grid("#comeList", [], columns, gridOptions);
     comeListGrid.setSelectionModel(new Slick.RowSelectionModel({}));
     comeListGrid.onDblClick.subscribe(function (e, args) {
         // ダブルクリックしたら再生位置をその位置にする
@@ -557,30 +840,14 @@ function initComeListGrid() {
     comeListGrid.onSort.subscribe(function (e, args) {
         var field = args.sortCol.field;
         // グローバール変数およびローカルストレージにソート状態を保存
-        localStorage.sortCol = sortCol = field;
-        localStorage.sortAsc = args.sortAsc;
+        localStorage.comeListSortCol = sortCol = field;
+        localStorage.comeListSortAsc = args.sortAsc;
         commentsSort(field, args.sortAsc);
-        comeListGridDataBind();
+        gridDataBind(comeListGrid, comments);
     });
 
-    // ヘッダークリック禁止用マスクレイヤーの作成
-    var header = document.getElementsByClassName("slick-header")[0];
-    headerClickMask = document.createElement("div");
-    headerClickMask.setAttribute("id", "headerClickMask");
-    headerClickMask.style.position = "absolute";
-    headerClickMask.style.left = headerClickMask.style.top = 0 + "px";
-    headerClickMask.style.width = header.offsetWidth + "px";
-    headerClickMask.style.height = header.offsetHeight + "px";
-    headerClickMask.style.display = isAutoScroll ? "" : "none";
-    comeList.appendChild(headerClickMask);
-}
-
-// コメントリストグリッドデータバインド処理
-function comeListGridDataBind() {
-    comeListGrid.setData(comments);
-    comeListGrid.updateRowCount();
-    comeListGrid.render();
-}
+    
+}*/
 
 // コメント配列初期処理
 function initComments() {
@@ -602,19 +869,75 @@ function initComments() {
         come.updated_at = +new Date(comments[ci].updated_at);
         come.flag = false;
         come.element = null;
+        come.userID = "test";
         // コメント表示幅を取得
         measure.textContent = come.body;
         come.messageWidth = measure.offsetWidth;
     }
+    commentsSetNG();
 }
 
-function commentsSort(field, asc) {
-    comments.sort(function (a, b) {
-        var result = a[field] > b[field] ? 1 : a[field] < b[field] ? -1 : 0;
-        return asc ? result : -result;
-    });
+// NGユーザー追加処理
+function addNgUser(ngUserID) {
+    var flg = true;
+    for (var ngui = 0, ngul = ngUsers.length; ngui < ngul; ngui++) {
+        if (ngUsers[ngui].ngUserID == ngUserID) {
+            flg = false;
+            break;
+        }
+    }
+    if (flg) {
+        dataSort(ngUsers, "addDate", true);
+        var addData = {};
+        addData.ngUserID = ngUserID;
+        addData.addDate = +new Date();
+        ngUsers.push(addData);
+        if (ngUsers.length > 100) ngUsers.shift();
+        dataSort(ngUsers, ngUserListSortCol, ngUserListSortAsc);
+        localStorage.ngUsers = JSON.stringify(ngUsers);
+        gridDataBind(ngUserListGrid, ngUsers);
+        commentsSetNG();
+        gridDataBind(comeListGrid, comments);
+    }
 }
 
+// NGコメント追加処理
+function addNgCome(ngBody) {
+    var flg = true;
+    for (var ngci = 0, ngcl = ngComments.length; ngci < ngcl; ngci++) {
+        if (ngComments[ngci].ngBody == ngBody) {
+            flg = false;
+            break;
+        }
+    }
+    if (flg) {
+        dataSort(ngComments, "addDate", true);
+        var addData = {};
+        addData.ngBody = ngBody;
+        addData.addDate = +new Date();
+        ngComments.push(addData);
+        if (ngComments.length > 100) ngComments.shift();
+        dataSort(ngComments, ngComeListSortCol, ngComeListSortAsc);
+        localStorage.ngComments = JSON.stringify(ngComments);
+        gridDataBind(ngComeListGrid, ngComments);
+        commentsSetNG();
+        gridDataBind(comeListGrid, comments);
+    }
+}
+
+// コメント配列NGフラグ設定処理
+function commentsSetNG() {
+    for (var ci = 0, cl = comments.length; ci < cl; ci++) {
+        var come = comments[ci];
+        come.ng = false;
+        for (var ngui = 0, ngul = ngUsers.length; ngui < ngul; ngui++) {
+            come.ng |= (come.userID == ngUsers[ngui].ngUserID);
+        }
+        for (var ngci = 0, ngcl = ngComments.length; ngci < ngcl; ngci++) {
+            come.ng |= (come.body.indexOf(ngComments[ngci].ngBody) > -1);
+        }
+    }
+}
 
 // フレームループ関数
 function step() {
@@ -641,35 +964,39 @@ function step() {
                 for (var ri = 0; ri < rowCount; ri++) {
                     rowRightCome[ri] = null;
                 }
-                if (playingCheck) {
-                    isPlaying = false;
-                    playingState = 0;
-                }
-            } else if (previousTime < currentTime) {
+            } else {
                 if (playingCheck) {
                     // 4回チェックを行い、4回ともにcurrentTimeがpreviousTimeより大きい場合は、
                     // 再生中と判断する。
                     playingState++;
-                    //isPlaying = (playingState >= 4);
+                    if (playingState >= 4) {
+                        isPlaying = true;
+                        playingState = 0;
+                        pausingState = 0;
+                    }
                 }
-            } else {
-                if (playingCheck) {
+            }
+            // コメントを表示
+            if (playingCheck) render(currentTime);
+        } else {
+            if (playingCheck) {
+                // 4回チェックを行い、4回ともにcurrentTimeがpreviousTimeより大きい場合は、
+                // 再生中と判断する。
+                pausingState++;
+                if (pausingState >= 4) {
                     isPlaying = false;
                     playingState = 0;
+                    pausingState = 0;
                 }
             }
-
-            if (playingCheck) {
-                // コメントを表示
-                render(currentTime);
-            }
         }
+        //if(!isPopOutPlayer) debugSpan.textContent = isPlaying ? "再生中" : "停止中";
 
         // 前フレームcurrentTimeを更新
         previousTime = currentTime;
     }
     // 次のフレームをリクエスト(という日本語が正しいのかどうか…)
-    webkitRequestAnimationFrame(step);
+    if(isComeDisplay) webkitRequestAnimationFrame(step);
 }
 
 
@@ -679,13 +1006,13 @@ function step() {
 function render(currentTime) {
     for (var ci = 0, cl = comments.length; ci < cl; ci++) {
         var come = comments[ci];
-
+        if (come.ng) continue;
         // 表示開始からの経過時間算出
         var onTime = currentTime - come.position;
         if (onTime > 0) { // 表示時間に達した場合
             // コメントエレメント表示位置計算
-            var comeLeft = layerWidth - (come.messageWidth + layerWidth) * onTime / onTimeDuration;
-            var comeRight = comeLeft + come.messageWidth - layerWidth;
+            var comeLeft = playerWidth - (come.messageWidth + playerWidth) * onTime / onTimeDuration;
+            var comeRight = comeLeft + come.messageWidth;
             if (come.flag) {
                 if (onTime > onTimeDuration && come.flag) {
                     comeLayer.removeChild(come.element);
@@ -735,16 +1062,57 @@ function searchCanAddeRowIndex(come) {
             // 同じ行に短いコメントのあとに長いコメントが続くと
             // 短いコメントと長いコメントが重なってしまう場合があるので
             // 重なるか判定を行う
-
+            var zeroDuration = come.messageWidth / (playerWidth + come.messageWidth) * onTimeDuration;
+            var prevComePosAtZeroDuration =  playerWidth + prevCome.messageWidth - (playerWidth + prevCome.messageWidth) * (zeroDuration + (come.position - prevCome.position)) / onTimeDuration;
             // 追加するコメントの左端到達時点での既存のコメントの右端位置を求める。
-            //var prevComePos = layerWidth + prevCome.messageWidth - (prevCome.messageWidth + layerWidth) * ((come.position - prevCome.position) + layerWidth / (come.messageWidth + layerWidth) * onTimeDuration) / onTimeDuration;
+            //var prevComePos = playerWidth + prevCome.messageWidth - (prevCome.messageWidth + playerWidth) * ((come.position - prevCome.position) + playerWidth / (come.messageWidth + playerWidth) * onTimeDuration) / onTimeDuration;
             // 重なる幅が10px以内を許容範囲とする。
-            //if (prevComePos >= 10) continue;
-            // 上記の式ではうまくいかないため適当な判定式で判定
-            if ((come.position - prevCome.position) + layerWidth / (come.messageWidth + layerWidth) * onTimeDuration - 100 < onTimeDuration) continue;
+            if (prevComePosAtZeroDuration >= 10) continue;
         }
         return ri;
     }
     return -1;
 }
+function popOut(time, lcname, inPlaylist, collection_id, continuous_play_mode, continuous_play_on, continuous_play_sort) {
+    console.log(lcname);
+    //popOutWithCid(current_video_cid, time, lcname, inPlaylist, collection_id, continuous_play_mode, continuous_play_on, continuous_play_sort);
+}
 
+function popOutWithCid(cid, time, lcname, inPlaylist, collection_id, continuous_play_mode, continuous_play_on, continuous_play_sort) {
+    var url = "/stand_alone/" + cid + "?", params = [];
+    if (lcname) {
+        params.push("lcname=" + lcname);
+    }
+    if (typeof (continuous_play_mode) != "undefined") {
+        params.push("continuous_play_mode=" + continuous_play_mode);
+    }
+    if ((typeof (continuous_play_on) != "undefined") && (continuous_play_on == 1)) {
+        params.push("continuous_play=on");
+    }
+    params.push("locale=" + locale_lang);
+    try {
+        continuous_play_sort = ContinuousPlay.getSort(); params.push("continuous_play_sort=" + continuous_play_sort);
+    }
+    catch (e) { }
+    if (params.length > 0) {
+        url += params.join('&');
+    }
+    if (inPlaylist) {
+        url += "#in-playlist";
+    } else if (time) {
+        url += "#" + time;
+    }
+    var full = window.open(url, "stand_alone", "toolbar=0,status=0,resizable=1,scrollbars=0,width=512,height=288");
+    if (full) {
+        if (navigator.userAgent.indexOf("Chrome") == -1)
+            full.moveTo(0, 0); full.focus();
+    } else {
+        if (!Prototype.Browser.IE) {
+            var playerDiv = $('breakout-container');
+            var minTop = playerDiv.cumulativeOffset().top + 200;
+            alert("Oops - your browser may be blocking this pop-up. Please disable your pop-up blocker before continuing.");
+        } else {
+            alert("Oops - your browser may be blocking this pop-up. Please disable your pop-up blocker before continuing.");
+        }
+    }
+}

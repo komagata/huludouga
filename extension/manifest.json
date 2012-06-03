@@ -8,21 +8,22 @@
 				"http://www.hulu.jp/stand_alone/*"
 			],
 			"css":[
+				"css/jquery-ui-1.8.20.custom.css",
 				"css/slick.grid.css",
 				"css/slick-default-theme.css",
 				"css/hulucome.css"
 			],
 			"js":[
-				"js/lib/jquery-1.7.min.js",
-				"js/lib/jquery-ui-1.8.16.custom.min.js",
+				"js/lib/jquery-1.7.2.min.js",
+				"js/lib/jquery-ui-1.8.20.custom.min.js",
 				"js/lib/jquery.event.drag-2.0.min.js",
 				"js/lib/DateFormatter.js",
 				"js/lib/base64-binary.js",
+				"js/lib/jquery.clipboard.min.js",
 				"js/SlickGrid/plugins/slick.rowselectionmodel.js",
 				"js/SlickGrid/slick.core.js",
 				"js/SlickGrid/slick.formatters.js",
 				"js/SlickGrid/slick.grid.js",
-				"js/SlickGrid/slick.dataview.js",
 				"js/hulucome.js"
 			],
 			"web_accessible_resources":[

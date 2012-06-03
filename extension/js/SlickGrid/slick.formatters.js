@@ -13,7 +13,8 @@
                 "YesNo": YesNoFormatter,
                 "Checkmark": CheckmarkFormatter,
                 "Date": DtFormatter,
-                "Position": PositionFormatter
+                "Position": PositionFormatter,
+                "Comment": CommentFormatter
             }
         }
     });
@@ -64,7 +65,7 @@
         } else {
             dt = new Date(+value);
         }
-        return DateFormatter.format(dt, "y/m/d");
+        return DateFormatter.format(dt, "m/d H:i");
     }
 
     function PositionFormatter(row, cell, value, columnDef, dataContext) {
@@ -72,5 +73,9 @@
             return "";
         }
         return DateFormatter.format(new Date(+value), "i:s");
+    }
+
+    function CommentFormatter(row, cell, value, columnDef, dataContext) {
+        return dataContext.ng ? "#このコメントは表示されません。" : value;
     }
 })(jQuery);

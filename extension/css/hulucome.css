@@ -5,14 +5,15 @@
     pointer-events: none;
     overflow: hidden;
 }
-#comeListContainer 
+#comeListContainer, #ngUserListContainer, #ngComeListContainer
 {
     background:#fff;
     
 }
-#comeList
+#comeList, #ngUserList, #ngComeList
 {
     font-size:8pt;	
+    text-align:left;
 }
 .come
 {
@@ -36,7 +37,7 @@
     font-size:12px;
     float:left;
 }
-#btnComeDisplay
+#btnComeDisplay, #btnComeList, #btnNgUserList, #btnNgComeList
 {
     margin:auto 0 auto 40px;
     width:30px;
@@ -60,3 +61,34 @@
 {
     background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAACn0lEQVR42r2XPUsjURhG5x9YC8JaCBYWioWFIIugICIoKFhYBLQQxcLCziKFvYON2AVsbAQry93oZteNX5tPY740BA2rLDIKWj97jziyWYxEk3HgkGTmfZ+TSW7uvbGsKg5JDQ8PD8P39/e2IVgBmxpqrVoPQm5vb22Dc3d3p2qglp53vwHHcYZvbm4cgyCb/aNQ6Erb279fhGvUuPX0kvEm6fX1tW3QxcWVwuGSVlcLWlmpDmrpoZcMsqqSlkol/+XlpaLRopaXc1pczLwLeskgi8xXpcVi0WdQPF7Q/HxSMzO1QQZZZJL9orRQKHzO5/NKJHKam4todPS4LpBFJtk4yqRnZ2cN6XS6kMlkND19pN7ecF0hk2wcuJ7FJycn/mQyqUDgl9ravnkC2ThwPd9tNBp1YrGYOjqCamz84glk48D1eNfmhY8Ta2uHamr66ik4cOG04vF4wKDJyT01Nwc9BQcunIgjiURCfX0htbTseAoOXDgtnkBr6+6H4PosRhp4NZr/x/XxU2KIq7099CG4PiuVSgk6O79/CK6PO47wZGwsrK6uH56CAxdO6/T0NGDQwsKRurv3PAUHLpyWmUN9Zg7VxkZcPT0/PQUHLpyPUyYTOAwO7td9gXAh2/U8LxTmhZ3NZmXbMfX373sC2ThwlS2L5qTDhampYw0MHNQVMsnGUbYscpiF2pfL5bSzkzaj70hDQ4d1gSwyycbx4i7EXAywU9jdzWh2NqKRkeOaIIMsMsl+dd9lCux6bIH+3fKQWdVOk4/EfBdmTs1rfT0lny+i8fHqoJYeesmo+PFWOszGbPj8/NwxCDY301paSpqBEtXERDmc4xo1bj29ZLzr34Rp/mSatwx6I1v01vwf6ukN+M1jsJLs6Zq/WuFfnJONvDioRs4AAAAASUVORK5CYII=);
 }
+#fullScreenContainer:-webkit-full-screen {
+	width: 100%;
+	height: 100%;
+}
+#clContextMenu, #ngContextMenu 
+{
+    font-size: :8pt;
+    background: #e1efc7;
+    border: 1px solid gray;
+    padding: 2px;
+    display: inline-block;
+    min-width: 100px;
+    -moz-box-shadow: 2px 2px 2px silver;
+    -webkit-box-shadow: 2px 2px 2px silver;
+    z-index: 99999;
+}
+#clContextMenu li, #ngContextMenu li
+{
+    padding:0 2px 0 8px;
+    list-style: none;
+    cursor: pointer;
+    text-align:left;
+    background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAALCAYAAACprHcmAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAACCSURBVHjaYvz//z8DsQAggJjQBWoWhHDhUgwQQExYxF4ANfBgUwwQQNgU8wLxK2waAAKICYeNnFAN7MiCAAGESzHI1z+A+A+yIEAA4VL8AYglWhLW/EUWBAggbIofQBX+QpcACCAGUDgj4+r5wSzoYjAMEECMpEQKQAAxMZAAAAIMAE8xOCWOtRMIAAAAAElFTkSuQmCC) no-repeat center left;
+}
+#clContextMenu li:hover, #ngContextMenu li:hover{
+    background-color: white;
+}
+.watermark
+{
+    color: #999 !important;
+}
