@@ -255,9 +255,9 @@ function createElementForPagePlayer() {
     comeListContainer.appendChild(comeList);
     // コメントリストグリッド初期化
     var comeColumns = [];
-    comeColumns.push({ id: "position", name: "位置", field: "position", width: 60, formatter: Slick.Formatters.Position, sortable: true });
-    comeColumns.push({ id: "body", name: "コメント", field: "body", width: 270, formatter: Slick.Formatters.Comment, sortable: true });
-    comeColumns.push({ id: "updated_at", name: "書込日時", field: "updated_at", width: 70, formatter: Slick.Formatters.Date, sortable: true });
+    comeColumns.push({ id: "position", name: "位置", field: "position", width: 60, formatter: Slick.Formatters.Position, sortable: true, editor: Slick.Editors.Text });
+    comeColumns.push({ id: "body", name: "コメント", field: "body", width: 270, formatter: Slick.Formatters.Comment, sortable: true, selectable: true, editor: Slick.Editors.Text });
+    comeColumns.push({ id: "updated_at", name: "書込日時", field: "updated_at", width: 70, formatter: Slick.Formatters.Date, sortable: true, editor: Slick.Editors.Text });
     comeListGrid = initGrid("#comeList", comments, comeColumns);
     comeListGrid.onDblClick.subscribe(function (e, args) {
         // ダブルクリックしたら再生位置をその位置にする
@@ -484,12 +484,12 @@ function createElementForPagePlayer() {
     clContextAddNgComeMenuItem.addEventListener("click", function () {
         addNgCome(this.getAttribute("data"));
     });
-    clContextCopyMenuItem = document.createElement("li");
+    /*clContextCopyMenuItem = document.createElement("li");
     clContextMenu.appendChild(clContextCopyMenuItem);
     clContextCopyMenuItem.addEventListener("click", function () {
         var comment = this.getAttribute("data");
         $.clipboard(comment);
-    });
+    });*/
     document.body.appendChild(clContextMenu);
    
 
@@ -650,8 +650,8 @@ function showContextMenu(e) {
         clContextAddNgUserMenuItem.setAttribute("data", comments[row].userID);
         clContextAddNgComeMenuItem.textContent = come + " をNGコメントに追加";
         clContextAddNgComeMenuItem.setAttribute("data", comments[row].body.replace(/^[\s　]+|[\s　]+$/g, ''));
-        clContextCopyMenuItem.textContent = come + " をコピー";
-        clContextCopyMenuItem.setAttribute("data", comments[row].body);
+        //clContextCopyMenuItem.textContent = come + " をコピー";
+        //clContextCopyMenuItem.setAttribute("data", comments[row].body);
     }
     $("body").one("click", function () {
         if (currentGrid == comeListGrid) {
@@ -777,13 +777,13 @@ var gridOptions = {
     editable: true,
     enableCellNavigation: true,
     asyncEditorLoading: false,
-    autoEdit: false
+    autoEdit: true
 };
 
 // グリッド初期化
 function initGrid(id, data, columns) {
     var grid = new Slick.Grid(id, data, columns, gridOptions);
-    grid.setSelectionModel(new Slick.RowSelectionModel({}));
+    grid.setSelectionModel(new Slick.RowSelectionModel());
     grid.onSort.subscribe(function gridSort(e, args) {
         var grid = args.grid;
         var data = grid.getData();

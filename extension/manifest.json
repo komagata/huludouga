@@ -24,6 +24,7 @@
 				"js/SlickGrid/slick.core.js",
 				"js/SlickGrid/slick.formatters.js",
 				"js/SlickGrid/slick.grid.js",
+				"js/SlickGrid/slick.editors.js",
 				"js/hulucome.js"
 			],
 			"web_accessible_resources":[
