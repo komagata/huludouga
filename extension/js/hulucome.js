@@ -753,13 +753,13 @@ function xhrfunc(method, uri, sendData, retryCnt, callback) {
         if (!xhr.responseText) {
             setTimeout(xhrfunc(method, uri, sendData, retryCnt, callback), 3000);
         } else {
-            if (method == "GET") {
+            /*if (method == "GET") {
                 comments = JSON.parse(xhr.responseText);
                 if (comments.length == 0) {
                     setTimeout(xhrfunc(method, uri, sendData, retryCnt, callback), 3000);
                     return;
                 }
-            }
+            }*/
             callback(xhr.responseText);
         }
     };
